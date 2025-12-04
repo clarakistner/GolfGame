@@ -26,7 +26,7 @@ RenderSettings:
   m_AmbientIntensity: 1
   m_AmbientMode: 0
   m_SubtractiveShadowColor: {r: 0.42, g: 0.478, b: 0.627, a: 1}
-  m_SkyboxMaterial: {fileID: 2100000, guid: 73324b55f67f54c7bbf43204788b8bbe, type: 2}
+  m_SkyboxMaterial: {fileID: 2100000, guid: 369b9ebe3a62b904dbc19bd332b44086, type: 2}
   m_HaloStrength: 0.5
   m_FlareStrength: 1
   m_FlareFadeSpeed: 3
@@ -540,6 +540,18 @@ MeshCollider:
   m_Convex: 1
   m_CookingOptions: 30
   m_Mesh: {fileID: -5928785198427282456, guid: cb1a34d814702fc428d9e65c9f38d665, type: 3}
+--- !u!114 &506709549
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 506709546}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b0f1e22d2a7e46a48a17734503fb354e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &514383655 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 1502877291743220047, guid: cb1a34d814702fc428d9e65c9f38d665, type: 3}
@@ -1228,6 +1240,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 4356877828898064976, guid: cb1a34d814702fc428d9e65c9f38d665, type: 3}
       insertIndex: -1
       addedObject: {fileID: 506709548}
+    - targetCorrespondingSourceObject: {fileID: 4356877828898064976, guid: cb1a34d814702fc428d9e65c9f38d665, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 506709549}
   m_SourcePrefab: {fileID: 100100000, guid: cb1a34d814702fc428d9e65c9f38d665, type: 3}
 --- !u!1 &1474294665 stripped
 GameObject:
@@ -1617,7 +1632,7 @@ PrefabInstance:
       objectReference: {fileID: 1118665988}
     - target: {fileID: 3948782528565151361, guid: b5667a6b05014df43b39bbb0cb185166, type: 3}
       propertyPath: maxTacadas
-      value: 3
+      value: 4
       objectReference: {fileID: 0}
     - target: {fileID: 3948782528565151361, guid: b5667a6b05014df43b39bbb0cb185166, type: 3}
       propertyPath: textRecorde
