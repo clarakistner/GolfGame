@@ -1,59 +1,83 @@
 using System.Collections;
 using System.Collections.Generic;
+
+
+
 using UnityEngine;
 
-public class Tacada : MonoBehaviour {
+public class Tacada : MonoBehaviour
+{
 
-    public float maxX, maxY;
-    private float x, y;
+    public float maxX, maxZ;
+    public float x,z;
     private Vector2 pi;
     private Vector2 pf;
+    private float velocidade;
+    Rigidbody rb;
 
     LineRenderer lr;
-
     // Start is called before the first frame update
-    void Start() {
+    void Start()
+    {
         lr = GetComponent<LineRenderer>();
-
-        if (lr != null) {
-            lr.enabled = false;
-        }
+        rb = GetComponent<Rigidbody>();
+        if (rb == null)
+            Debug.Log("Adicionar LineRenderer!!");
+        lr.enabled = false;
     }
 
     // Update is called once per frame
-    void Update() {
-        int i;
-
-        for (i = 0; i < Input.touchCount; i++) { 
-
-            Touch touch = Input.GetTouch(i);
-
-            if(touch.phase == TouchPhase.Began) {
-                pi = touch.position;
-                pf = touch.position;
-                x = 0;
-                y = 0;
-                lr.enabled = true;
-                lr.SetPosition(0, transform.position);
-                lr.SetPosition(1, transform.position);
-            }
-
-            if (touch.phase == TouchPhase.Moved) {
-                pf = touch.position;
-                x = (pi.x - pf.x) * 0.03f;
-                y = (pi.y - pf.y) * 0.03f;
-
-                if (x > maxX) {
-                    x = maxX;
+    void Update()
+    {
+        velocidade = rb.velocity.magnitude;
+        if( velocidade < 0.05f )
+        {
+            rb.velocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+            lr.enabled = true;
+        }
+        else
+        {
+            lr.enabled = false;
+        }
+        if(lr.enabled)
+        {
+            for(int i = 0; i<Input.touchCount; i++)
+            {
+                Touch t=Input.GetTouch(i);
+                if( t.phase==TouchPhase.Began )
+                {
+                    pi=t.position;
+                    pf = t.position;
+                    x = 0;
+                    z=0;
+                    lr.enabled = true;
+                    lr.SetPosition(0, transform.position);
+                    lr.SetPosition(1, transform.position);
                 }
-                if (y > maxY) {
-                    y = maxY;
-                    lr.SetPosition(1, new Vector3 (transform.position.x + x, transform.position.y, transform.position.z + y));
+                if(t.phase==TouchPhase.Moved)
+                {
+                    pf=t.position;
+                    x = (pi.x - pf.x) * 0.03f;
+                    z = (pi.y - pf.y) * 0.03f;
+                    if (x > maxX)
+                        x = maxX;
+                    if(z>maxZ)
+                        z = maxZ;
+                    lr.SetPosition(1, new Vector3(
+                        transform.position.x + x,
+                       transform.position.y,
+                        transform.position.z + z));
                 }
-                if (touch.phase == TouchPhase.Ended) { 
-                    GetComponent<Rigidbody>().AddForce(new Vector3(2 * x, 0, 2 * y), ForceMode.Impulse);
+                if(t.phase==TouchPhase.Ended)
+                {
+                    GetComponent<Rigidbody>().AddForce(
+                        new Vector3(2 * x, 0, 2 * z),
+                        ForceMode.Impulse);
                     lr.enabled = false;
-                }            
+                    if (GameManager.gm)
+                        GameManager.gm.Tacada();
+                }
             }
         }
     }
