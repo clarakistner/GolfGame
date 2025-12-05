@@ -1,7 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
 using TMPro;
 using UnityEngine.SceneManagement;
 
@@ -9,56 +8,74 @@ public class GameManager : MonoBehaviour
 {
     public static GameManager gm;
 
-    [Header("Referências de UI")]
+    [Header("Referências de UI (HUD)")]
     public TMP_Text textTacadas;
     public TMP_Text textPar;
-    public TMP_Text textRecorde;
-    public TMP_Text textResumoFinal;
+    public TMP_Text textRecorde;   
 
     [Header("Configuração da Fase")]
-    public int par;
-    public string idFase = "fase01"; // ID único por fase
+    [Tooltip("Número ideal de tacadas para completar o buraco")]
+    public int par = 3;
+    public string idFase = "fase01"; 
 
-    [Header("Configurações de Jogo")]
-    public int maxTacadas = 5;
-    public GameObject painelGameOver; // Painel com texto e botão de reinício
+    [Header("Configuração do Circuito (6 fases)")]
+    [Tooltip("Marque TRUE na primeira fase do circuito")]
+    public bool primeiraFaseDoCircuito = false;
 
-    [Header("Painel de Finalização")]
+    [Tooltip("Marque TRUE na última fase do circuito (opcional, ver fallback abaixo)")]
+    public bool ultimaFaseDoCircuito = false;
+
+    [Header("Painel de Finalização (da fase)")]
     public GameObject painelFinalizacao;
-    public TMP_Text textParabens;
-    public TMP_Text textRecordeFinal;
-
-    private int tacadas;
-    private int recorde;
+    [Tooltip("Texto grande central que mostra BIRDIE / PAR / BOGEY...")]
+    public TMP_Text textClassificacaoFinal;
 
     [Header("Avanço de Fase")]
-public string nomeProximaFase = "nomeDaCena"; // preencha no Inspector
+    [Tooltip("Nome da próxima cena para carregar (se vazio, considera que esta é a última fase do circuito)")]
+    public string nomeProximaFase = "nomeDaCena";
 
-public void CarregarProximaFase()
-{
-    if (!string.IsNullOrEmpty(nomeProximaFase))
-    {
-        SceneManager.LoadScene(nomeProximaFase);
-    }
-    else
-    {
-        Debug.LogWarning("Nome da próxima fase não está atribuído!");
-    }
-}
+    private int tacadas;
 
+    private int pontuacaoTotalAtual;  
+    private int recordeGeral;         
+    private Vector3 ultimaPosicaoValida;
 
-    void Start()
+    void Awake()
     {
         if (gm == null)
             gm = this;
+        else
+            Destroy(gameObject);
+    }
 
+    void Start()
+    {
         tacadas = 0;
-        recorde = PlayerPrefs.GetInt("Recorde_" + idFase, int.MaxValue);
+
+        if (primeiraFaseDoCircuito)
+        {
+            PlayerPrefs.SetInt("PontuacaoAtual", 0);
+            Debug.Log("[GM] Primeira fase: zerando PontuacaoAtual");
+        }
+
+        pontuacaoTotalAtual = PlayerPrefs.GetInt("PontuacaoAtual", 0);
+        recordeGeral = PlayerPrefs.GetInt("RecordeGeral", int.MaxValue);
+
+        Debug.Log($"[GM] Start - PontuacaoAtual = {pontuacaoTotalAtual}, RecordeGeral = {(recordeGeral == int.MaxValue ? "nenhum" : recordeGeral.ToString())}");
+
+        GameObject bola = GameObject.FindWithTag("Bola");
+        if (bola != null)
+            ultimaPosicaoValida = bola.transform.position;
 
         AtualizarUI();
 
-        if (painelGameOver != null) painelGameOver.SetActive(false);
-        if (painelFinalizacao != null) painelFinalizacao.SetActive(false);
+        if (painelFinalizacao != null)
+            painelFinalizacao.SetActive(false);
+    }
+
+    void Update()
+    {
+        MonitorarBola();
     }
 
     public void Tacada()
@@ -67,11 +84,6 @@ public void CarregarProximaFase()
 
         tacadas++;
         AtualizarUI();
-
-        if (tacadas >= maxTacadas)
-        {
-            MostrarGameOver();
-        }
     }
 
     void AtualizarUI()
@@ -83,15 +95,29 @@ public void CarregarProximaFase()
             textPar.text = "Par: " + par;
 
         if (textRecorde != null)
-            textRecorde.text = "Recorde: " + (recorde == int.MaxValue ? "--" : recorde.ToString());
+        {
+            string txtRec = (recordeGeral == int.MaxValue) ? "--" : recordeGeral.ToString();
+            textRecorde.text = "Recorde: " + txtRec;
+        }
     }
 
     public void FinalizarFase()
     {
-        VerificarRecorde();
+        int pontuacaoBuraco = tacadas - par;
 
-        if (textResumoFinal != null)
-            textResumoFinal.text = "Você fez: " + NomePontuacao();
+        pontuacaoTotalAtual = PlayerPrefs.GetInt("PontuacaoAtual", 0);
+        pontuacaoTotalAtual += pontuacaoBuraco;
+        PlayerPrefs.SetInt("PontuacaoAtual", pontuacaoTotalAtual);
+
+        Debug.Log($"[GM] FinalizarFase - par={par}, tacadas={tacadas}, pontuacaoBuraco={pontuacaoBuraco}, pontuacaoTotalAtual={pontuacaoTotalAtual}");
+
+        bool ehUltimaFase = ultimaFaseDoCircuito || string.IsNullOrEmpty(nomeProximaFase);
+
+        if (ehUltimaFase)
+        {
+            Debug.Log("[GM] Esta é a ÚLTIMA fase do circuito. Verificando recorde geral...");
+            VerificarRecordeGeral();
+        }
 
         AtualizarUI();
     }
@@ -102,68 +128,51 @@ public void CarregarProximaFase()
         {
             painelFinalizacao.SetActive(true);
 
-            if (textParabens != null)
-                textParabens.text = "Parabéns!";
-
-            if (textResumoFinal != null)
-                textResumoFinal.text = "Você fez: " + NomePontuacao();
-
-            if (textRecordeFinal != null)
-                textRecordeFinal.text = "Recorde: " + (recorde == int.MaxValue ? "--" : recorde.ToString());
+            if (textClassificacaoFinal != null)
+                textClassificacaoFinal.text = NomePontuacao().ToUpper();
         }
     }
-    void OnTriggerEnter(Collider other)
-{
-    if (other.CompareTag("Bola"))
+
+    void MonitorarBola()
     {
-        GameManager.gm.FinalizarFase();
-        GameManager.gm.MostrarFinalizacao();
-    }
-}
-
-    
-Vector3 ultimaPosicaoValida;
-
-void Update()
-{
-    
-     MonitorarBola();
-}
-void MonitorarBola()
-{
-    GameObject bola = GameObject.FindWithTag("Bola");
-    if (bola != null)
-    {
-        Rigidbody rb = bola.GetComponent<Rigidbody>();
-
-        if (rb.velocity.magnitude < 0.05f)
+        GameObject bola = GameObject.FindWithTag("Bola");
+        if (bola != null)
         {
-            ultimaPosicaoValida = bola.transform.position;
-        }
+            Rigidbody rb = bola.GetComponent<Rigidbody>();
 
-        if (bola.transform.position.y < -2f) // Caiu da pista
-        {
-            rb.velocity = Vector3.zero;
-            rb.angularVelocity = Vector3.zero;
-            bola.transform.position = ultimaPosicaoValida;
+            if (rb.velocity.magnitude < 0.05f)
+                ultimaPosicaoValida = bola.transform.position;
+
+            if (bola.transform.position.y < -2f)
+            {
+                rb.velocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+                bola.transform.position = ultimaPosicaoValida;
+            }
         }
     }
-}
-
-
-
-    void VerificarRecorde()
+    void VerificarRecordeGeral()
     {
-        if (tacadas < recorde)
+        Debug.Log($"[GM] VerificarRecordeGeral - pontuacaoTotalAtual={pontuacaoTotalAtual}, recordeGeralAntes={(recordeGeral == int.MaxValue ? "nenhum" : recordeGeral.ToString())}");
+
+        if (pontuacaoTotalAtual < recordeGeral)
         {
-            recorde = tacadas;
-            PlayerPrefs.SetInt("Recorde_" + idFase, recorde);
+            recordeGeral = pontuacaoTotalAtual;
+            PlayerPrefs.SetInt("RecordeGeral", recordeGeral);
+            PlayerPrefs.Save(); 
+
+            Debug.Log($"[GM] NOVO RECORDE GERAL = {recordeGeral}");
+        }
+        else
+        {
+            Debug.Log("[GM] Não bateu o recorde geral.");
         }
     }
 
     string NomePontuacao()
     {
         int diff = tacadas - par;
+
         if (diff <= -3) return "Albatross";
         if (diff == -2) return "Eagle";
         if (diff == -1) return "Birdie";
@@ -181,19 +190,19 @@ void MonitorarBola()
         return rb != null && rb.velocity.sqrMagnitude < 0.0025f;
     }
 
-    void MostrarGameOver()
-    {
-        if (painelGameOver != null)
-            painelGameOver.SetActive(true);
-    }
-
     public void ReiniciarFase()
     {
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 
+    public void CarregarProximaFase()
+    {
+        if (!string.IsNullOrEmpty(nomeProximaFase))
+            SceneManager.LoadScene(nomeProximaFase);
+    }
+
     public void IrParaCena(string nomeDaCena)
-{
-    SceneManager.LoadScene(nomeDaCena);
-}
+    {
+        SceneManager.LoadScene(nomeDaCena);
+    }
 }

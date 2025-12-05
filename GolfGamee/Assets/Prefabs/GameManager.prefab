@@ -47,12 +47,10 @@ MonoBehaviour:
   textTacadas: {fileID: 0}
   textPar: {fileID: 0}
   textRecorde: {fileID: 0}
-  textResumoFinal: {fileID: 0}
-  par: 0
+  par: 2
   idFase: fase01
-  maxTacadas: 5
-  painelGameOver: {fileID: 0}
+  primeiraFaseDoCircuito: 0
+  ultimaFaseDoCircuito: 0
   painelFinalizacao: {fileID: 0}
-  textParabens: {fileID: 0}
-  textRecordeFinal: {fileID: 0}
+  textClassificacaoFinal: {fileID: 0}
   nomeProximaFase: fase2
